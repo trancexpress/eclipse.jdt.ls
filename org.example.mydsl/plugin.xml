@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension
+      id="dslCompletionHandler"
+      point="org.eclipse.jdt.ls.core.completionHandler">
+      <completionHandler
+          id="dslHandler"
+          class="org.example.mydsl.support.DslCompletionHandler" />
+   </extension>
+   <extension
+         id="buildSupport"
+         point="org.eclipse.jdt.ls.core.buildSupport">
+         <buildSupport
+            id="dslBuildSupport"
+            order="200"
+            class="org.example.mydsl.support.DslBuildSupport" />
+   </extension>
+   <extension
+         id="DslLanguageServerApplication"
+         point="org.eclipse.core.runtime.applications">
+      <application
+            cardinality="singleton-global"
+            thread="main"
+            visible="true">
+         <run
+               class="org.example.mydsl.support.DslLanguageServerApplication">
+         </run>
+      </application>
+   </extension>
+   <extension
+         id="product"
+         point="org.eclipse.core.runtime.products">
+      <product
+            application="org.example.mydsl.support.product"
+            name="Java+DSL Language Server">
+         <property
+               name="appName"
+               value="Java+DSL Language Server">
+         </property>
+      </product>
+   </extension>
+</plugin>

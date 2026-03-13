@@ -24,6 +24,9 @@
    <bundle id="org.eclipse.jdt.ls.logback.appender.source" version="0.0.0">
     <category name="jdt.ls.sdk" />
    </bundle>
+   <bundle id="org.example.mydsl" version="0.0.0">
+    <category name="dsl.example" />
+   </bundle>
 
    <feature id="org.eclipse.equinox.executable" version="0.0.0"/>
    <bundle id="org.eclipse.jdt.core.javac" version="0.0.0"/>

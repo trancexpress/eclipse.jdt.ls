@@ -40,6 +40,7 @@
 		<module>org.eclipse.jdt.ls.tests</module>
 		<module>org.eclipse.jdt.ls.logback.appender</module>
 		<module>org.eclipse.jdt.ls.tests.syntaxserver</module>
+		<module>org.example.mydsl</module>
 		<module>org.eclipse.jdt.ls.product</module>
 	</modules>
 	<build>
