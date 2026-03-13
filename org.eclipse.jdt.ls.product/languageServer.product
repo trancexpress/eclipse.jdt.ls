@@ -55,6 +55,7 @@
       <plugin id="org.eclipse.jdt.ls.core"/>
       <plugin id="org.eclipse.jdt.ls.filesystem"/>
       <plugin id="org.eclipse.jdt.ls.logback.appender" fragment="true"/>
+      <plugin id="org.example.mydsl"/>
       <plugin id="org.eclipse.m2e.apt.core"/>
       <plugin id="org.eclipse.m2e.core"/>
       <plugin id="org.eclipse.m2e.jdt"/>
