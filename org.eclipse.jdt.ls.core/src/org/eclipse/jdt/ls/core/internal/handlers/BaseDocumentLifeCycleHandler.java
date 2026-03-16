@@ -125,10 +125,12 @@ public abstract class BaseDocumentLifeCycleHandler {
 	private MovingAverage movingAverageForValidation = new MovingAverage(DOCUMENT_LIFECYCLE_MAX_DEBOUNCE);
 	private MovingAverage movingAverageForDiagnostics = new MovingAverage(PUBLISH_DIAGNOSTICS_MIN_DEBOUNCE);
 	protected final PreferenceManager preferenceManager;
+	private final DocumentLifecycleListeners documentLifecycleListeners;
 	private Object reconcileLock = new Object();
 
 	public BaseDocumentLifeCycleHandler(PreferenceManager preferenceManager, boolean delayValidation) {
 		this.preferenceManager = preferenceManager;
+		this.documentLifecycleListeners = new DocumentLifecycleListeners();
 		this.sharedASTProvider = CoreASTProvider.getInstance();
 		if (delayValidation) {
 			this.validationTimer = new Job("Validate documents") {
@@ -343,6 +345,7 @@ public abstract class BaseDocumentLifeCycleHandler {
 		documentVersions.remove(params.getTextDocument().getUri());
 		lastSyncedDocumentLengths.remove(params.getTextDocument().getUri());
 		handleClosed(params);
+		documentLifecycleListeners.didClose(params);
 	}
 
 	public void didOpen(DidOpenTextDocumentParams params) {
@@ -359,11 +362,13 @@ public abstract class BaseDocumentLifeCycleHandler {
 				JavaLanguageServerPlugin.logException("Handle document open ", e);
 			}
 		}
+		documentLifecycleListeners.didOpen(params);
 	}
 
 	public void didChange(DidChangeTextDocumentParams params) {
 		documentVersions.put(params.getTextDocument().getUri(), params.getTextDocument().getVersion());
 		handleChanged(params);
+		documentLifecycleListeners.didChange(params);
 	}
 
 	public void didSave(DidSaveTextDocumentParams params) {
@@ -382,10 +387,14 @@ public abstract class BaseDocumentLifeCycleHandler {
 				JavaLanguageServerPlugin.logException("Handle document save ", e);
 			}
 		}
+		documentLifecycleListeners.didSave(params);
 	}
 
 	public static void handleFileRenameForTypeDeclaration(String documentUri) {
 		ICompilationUnit cu = JDTUtils.resolveCompilationUnit(documentUri);
+		if (cu == null) {
+			return;
+		}
 		CompilationUnit astRoot = CoreASTProvider.getInstance().getAST(cu, CoreASTProvider.WAIT_YES, null);
 		if (astRoot == null) {
 			return;
