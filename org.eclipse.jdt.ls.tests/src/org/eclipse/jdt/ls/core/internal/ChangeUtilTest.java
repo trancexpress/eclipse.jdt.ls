@@ -35,6 +35,7 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.RenameFile;
 import org.eclipse.lsp4j.ResourceOperation;
+import org.eclipse.lsp4j.SnippetTextEdit;
 import org.eclipse.lsp4j.TextDocumentEdit;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
@@ -87,8 +88,8 @@ public class ChangeUtilTest extends AbstractProjectsManagerBasedTest {
 		assertNotNull(textDocumentEdit);
 		assertEquals(textDocumentEdit.getEdits().size(), 1);
 
-		TextEdit textEdit = textDocumentEdit.getEdits().get(0);
-		assertEquals(textEdit.getNewText(), newText);
+		Either<TextEdit, SnippetTextEdit> textEdit = textDocumentEdit.getEdits().get(0);
+		assertEquals(textEdit.map(TextEdit::getNewText, s -> s.getSnippet().getValue()), newText);
 	}
 
 	// Resource Changes
@@ -151,7 +152,7 @@ public class ChangeUtilTest extends AbstractProjectsManagerBasedTest {
 		editB.getChanges().put(uriA, Arrays.asList(textEdit));
 		List<Either<TextDocumentEdit, ResourceOperation>> documentChanges = new ArrayList<>();
 		TextDocumentEdit textDocumentEdit = new TextDocumentEdit(
-			new VersionedTextDocumentIdentifier(uriA, 1), Arrays.asList(textEdit));
+				new VersionedTextDocumentIdentifier(uriA, 1), Arrays.asList(Either.forLeft(textEdit)));
 		documentChanges.add(Either.forLeft(textDocumentEdit));
 		ResourceOperation resourceOperation = new RenameFile("uriA", "uriB");
 		documentChanges.add(Either.forRight(resourceOperation));

@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -57,6 +58,7 @@ import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DiagnosticSeverity;
+import org.eclipse.lsp4j.MarkupContent;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.Range;
@@ -91,7 +93,7 @@ public class WorkspaceDiagnosticsHandlerTest extends AbstractProjectsManagerBase
 	private static final Comparator<Diagnostic> DIAGNOSTICS_COMPARATOR = (Diagnostic d1, Diagnostic d2) -> {
 		int diff = d1.getRange().getStart().getLine() - d2.getRange().getStart().getLine();
 		if (diff == 0) {
-			diff = d1.getMessage().compareTo(d2.getMessage());
+			diff = d1.getMessage().map(Function.identity(), MarkupContent::getValue).compareTo(d2.getMessage().map(Function.identity(), MarkupContent::getValue));
 		}
 		return diff;
 	};
@@ -185,13 +187,13 @@ public class WorkspaceDiagnosticsHandlerTest extends AbstractProjectsManagerBase
 		assertTrue(taskDiags.isPresent(), "No TaskMarkerTest.java markers were found");
 		List<Diagnostic> diags = taskDiags.get().getDiagnostics();
 		assertEquals(3, diags.size(), "Some marker is missing");
-		long todoMarkers = diags.stream().filter(p -> p.getMessage().startsWith("TODO")).count();
+		long todoMarkers = diags.stream().filter(p -> p.getMessage().map(Function.identity(), MarkupContent::getValue).startsWith("TODO")).count();
 		assertEquals(2, todoMarkers, "A TODO marker is missing");
 		Collections.sort(diags, new Comparator<Diagnostic>() {
 
 			@Override
 			public int compare(Diagnostic o1, Diagnostic o2) {
-				return o1.getMessage().compareTo(o2.getMessage());
+				return o1.getMessage().map(Function.identity(), MarkupContent::getValue).compareTo(o2.getMessage().map(Function.identity(), MarkupContent::getValue));
 			}
 		});
 		Range r;
@@ -262,7 +264,7 @@ public class WorkspaceDiagnosticsHandlerTest extends AbstractProjectsManagerBase
 		// https://github.com/redhat-developer/vscode-java/issues/2857
 		// m2e 2.2.0 returns 3 markers
 		assertEquals(3, diags.size(), diags.toString());
-		Diagnostic diag = diags.stream().filter(d -> d.getMessage().startsWith("Project build error")).findFirst().get();
+		Diagnostic diag = diags.stream().filter(d -> d.getMessage().map(Function.identity(), MarkupContent::getValue).startsWith("Project build error")).findFirst().get();
 		assertEquals("Project build error: 'dependencies.dependency.version' for org.apache.commons:commons-lang3:jar is missing.", diag.getMessage());
 	}
 
@@ -280,13 +282,13 @@ public class WorkspaceDiagnosticsHandlerTest extends AbstractProjectsManagerBase
 		List<Diagnostic> diags = projectDiags.get().getDiagnostics();
 		Collections.sort(diags, DIAGNOSTICS_COMPARATOR);
 		assertEquals(2, diags.size(), diags.toString());
-		assertTrue(diags.get(1).getMessage().startsWith("The compiler compliance specified is 1.7 but a JRE 1.8 is used"));
+		assertTrue(diags.get(1).getMessage().map(Function.identity(), MarkupContent::getValue).startsWith("The compiler compliance specified is 1.7 but a JRE 1.8 is used"));
 		Optional<PublishDiagnosticsParams> pomDiags = allCalls.stream().filter(p -> p.getUri().endsWith("pom.xml")).findFirst();
 		assertTrue(pomDiags.isPresent(), "No pom.xml errors were found");
 		diags = pomDiags.get().getDiagnostics();
 		Collections.sort(diags, DIAGNOSTICS_COMPARATOR);
 		assertEquals(3, diags.size(), diags.toString());
-		assertTrue(diags.get(2).getMessage().startsWith("Project build error: "));
+		assertTrue(diags.get(2).getMessage().map(Function.identity(), MarkupContent::getValue).startsWith("Project build error: "));
 	}
 
 	@Test
@@ -400,7 +402,7 @@ public class WorkspaceDiagnosticsHandlerTest extends AbstractProjectsManagerBase
 		// https://github.com/eclipse/eclipse.jdt.ls/issues/2331
 		boolean hasMissingNature = false;
 		for (PublishDiagnosticsParams projectDiags : allCalls) {
-			if (hasMissingNature = projectDiags.getDiagnostics().stream().filter(p -> (p.getMessage().startsWith("Unknown referenced nature"))).findFirst().isPresent()) {
+			if (hasMissingNature = projectDiags.getDiagnostics().stream().filter(p -> (p.getMessage().map(Function.identity(), MarkupContent::getValue).startsWith("Unknown referenced nature"))).findFirst().isPresent()) {
 				break;
 			}
 		}
@@ -513,13 +515,13 @@ public class WorkspaceDiagnosticsHandlerTest extends AbstractProjectsManagerBase
 			}
 		}
 		assertTrue(projectDiags.size() > 0, "No maven/salut errors were found");
-		Optional<Diagnostic> projectDiag = projectDiags.stream().filter(p -> p.getMessage().contains("references non existing library")).findFirst();
+		Optional<Diagnostic> projectDiag = projectDiags.stream().filter(p -> p.getMessage().map(Function.identity(), MarkupContent::getValue).contains("references non existing library")).findFirst();
 		assertTrue(projectDiag.isPresent(), "No 'references non existing library' diagnostic");
 		assertEquals(projectDiag.get().getSeverity(), DiagnosticSeverity.Error);
 		assertTrue(pomDiags.size() > 0, "No pom.xml errors were found");
-		Optional<Diagnostic> pomDiag = pomDiags.stream().filter(p -> p.getMessage().startsWith("Missing artifact")).findFirst();
+		Optional<Diagnostic> pomDiag = pomDiags.stream().filter(p -> p.getMessage().map(Function.identity(), MarkupContent::getValue).startsWith("Missing artifact")).findFirst();
 		assertTrue(pomDiag.isPresent(), "No 'missing artifact' diagnostic");
-		assertTrue(pomDiag.get().getMessage().startsWith("Missing artifact"));
+		assertTrue(pomDiag.get().getMessage().map(Function.identity(), MarkupContent::getValue).startsWith("Missing artifact"));
 		assertEquals(pomDiag.get().getRange().getStart().getLine(), 19);
 		assertEquals(pomDiag.get().getRange().getStart().getCharacter(), 3);
 		assertEquals(pomDiag.get().getRange().getEnd().getLine(), 19);

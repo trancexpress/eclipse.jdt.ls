@@ -54,7 +54,6 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextEdit;
-import org.eclipse.lsp4j.extended.SnippetTextEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -400,9 +399,9 @@ public class CodeActionResolveHandlerTest extends AbstractCompilationUnitBasedTe
 
 		CodeAction resolvedCodeAction = server.resolveCodeAction(unresolvedCodeAction).join();
 		assertNotNull(resolvedCodeAction.getEdit(), "Should resolve the edit property in the resolveCodeAction request");
-		List<TextEdit> edits = resolvedCodeAction.getEdit().getDocumentChanges().get(0).getLeft().getEdits();
-		assertTrue(edits.get(0) instanceof SnippetTextEdit);
-		assertEquals(((SnippetTextEdit) edits.get(0)).getSnippet().getValue(), "${1|HashMap,Map,Cloneable,Serializable,AbstractMap,Object|}");
+		List<Either<TextEdit, org.eclipse.lsp4j.SnippetTextEdit>> edits = resolvedCodeAction.getEdit().getDocumentChanges().get(0).getLeft().getEdits();
+		assertTrue(edits.get(0).isRight());
+		assertEquals(edits.get(0).getRight().getSnippet().getValue(), "${1|HashMap,Map,Cloneable,Serializable,AbstractMap,Object|}");
 	}
 
 	// https://github.com/redhat-developer/vscode-java/issues/3905
@@ -443,9 +442,9 @@ public class CodeActionResolveHandlerTest extends AbstractCompilationUnitBasedTe
 
 		CodeAction resolvedCodeAction = server.resolveCodeAction(unresolvedCodeAction).join();
 		assertNotNull(resolvedCodeAction.getEdit(), "Should resolve the edit property in the resolveCodeAction request");
-		List<TextEdit> edits = resolvedCodeAction.getEdit().getDocumentChanges().get(0).getLeft().getEdits();
-		assertTrue(edits.get(0) instanceof SnippetTextEdit);
-		assertEquals(((SnippetTextEdit) edits.get(0)).getSnippet().getValue(), "\n\n        public SubType(${1:String} ${2:name}) {\n            super(name);\n            //TODO Auto-generated constructor stub\n        }");
+		List<Either<TextEdit, org.eclipse.lsp4j.SnippetTextEdit>> edits = resolvedCodeAction.getEdit().getDocumentChanges().get(0).getLeft().getEdits();
+		assertTrue(edits.get(0).isRight());
+		assertEquals(edits.get(0).getRight().getSnippet().getValue(), "\n\n        public SubType(${1:String} ${2:name}) {\n            super(name);\n            //TODO Auto-generated constructor stub\n        }");
 	}
 
 	// https://github.com/redhat-developer/vscode-java/issues/4138
@@ -505,9 +504,9 @@ public class CodeActionResolveHandlerTest extends AbstractCompilationUnitBasedTe
 
 		CodeAction resolvedCodeAction = server.resolveCodeAction(unresolvedCodeAction).join();
 		assertNotNull(resolvedCodeAction.getEdit(), "Should resolve the edit property in the resolveCodeAction request");
-		List<TextEdit> edits = resolvedCodeAction.getEdit().getDocumentChanges().get(0).getLeft().getEdits();
-		assertTrue(edits.get(0) instanceof SnippetTextEdit);
-		SnippetTextEdit snippetTextEdit = (SnippetTextEdit) edits.get(0);
+		List<Either<TextEdit, org.eclipse.lsp4j.SnippetTextEdit>> edits = resolvedCodeAction.getEdit().getDocumentChanges().get(0).getLeft().getEdits();
+		assertTrue(edits.get(0).isRight());
+		org.eclipse.lsp4j.SnippetTextEdit snippetTextEdit = edits.get(0).getRight();
 		String snippet = snippetTextEdit.getSnippet().getValue();
 		assertTrue(snippet.contains("${1:create}(${4|Map<String\\,String>|}"));
 	}

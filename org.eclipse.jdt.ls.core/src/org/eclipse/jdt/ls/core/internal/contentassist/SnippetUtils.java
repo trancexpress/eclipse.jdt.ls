@@ -35,9 +35,11 @@ import org.eclipse.jface.text.link.LinkedPosition;
 import org.eclipse.lsp4j.MarkupContent;
 import org.eclipse.lsp4j.MarkupKind;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.SnippetTextEdit;
+import org.eclipse.lsp4j.StringValue;
+import org.eclipse.lsp4j.StringValueKind;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.WorkspaceEdit;
-import org.eclipse.lsp4j.extended.SnippetTextEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.text.edits.MultiTextEdit;
 import org.eclipse.text.edits.ReplaceEdit;
@@ -188,11 +190,11 @@ public class SnippetUtils {
 			snippets.sort(null);
 			for (int i = 0; i < edit.getDocumentChanges().size(); i++) {
 				if (edit.getDocumentChanges().get(i).isLeft()) {
-					List<TextEdit> edits = edit.getDocumentChanges().get(i).getLeft().getEdits();
+					List<Either<TextEdit, org.eclipse.lsp4j.SnippetTextEdit>> edits = edit.getDocumentChanges().get(i).getLeft().getEdits();
 					String editUri = edit.getDocumentChanges().get(i).getLeft().getTextDocument().getUri();
 					for (int j = 0; j < edits.size(); j++) {
-						Range editRange = edits.get(j).getRange();
-						StringBuilder replacementText = new StringBuilder(edits.get(j).getNewText());
+						Range editRange = edits.get(j).map(TextEdit::getRange, SnippetTextEdit::getRange);
+						StringBuilder replacementText = new StringBuilder(edits.get(j).map(TextEdit::getNewText, s -> s.getSnippet().getValue()));
 						int rangeStart = JsonRpcHelpers.toOffset(buffer, editRange.getStart().getLine(), editRange.getStart().getCharacter());
 						int rangeEnd = rangeStart + replacementText.length();
 
@@ -209,8 +211,8 @@ public class SnippetUtils {
 							}
 						}
 
-						SnippetTextEdit newEdit = new SnippetTextEdit(editRange, replacementText.toString());
-						edits.set(j, newEdit);
+						SnippetTextEdit newEdit = new SnippetTextEdit(editRange, new StringValue(StringValueKind.SNIPPET, replacementText.toString()));
+						edits.set(j, Either.forRight(newEdit));
 					}
 				}
 			}

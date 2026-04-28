@@ -25,7 +25,9 @@ import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.Document;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.SnippetTextEdit;
 import org.eclipse.lsp4j.TextEdit;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
 /**
  * @author Fred Bricon
@@ -70,6 +72,36 @@ public class TextEditUtil {
 		return text;
 	}
 
+	public static String applyNew(String text, Collection<? extends Either<TextEdit, SnippetTextEdit>> edits) throws BadLocationException {
+		Assert.isNotNull(text);
+		Assert.isNotNull(edits);
+		return applyNew(new Document(text), edits);
+	}
+
+	public static String applyNew(ICompilationUnit cu, Collection<? extends Either<TextEdit, SnippetTextEdit>> edits) throws BadLocationException, JavaModelException {
+		Assert.isNotNull(cu);
+		Assert.isNotNull(edits);
+		return applyNew(cu.getSource(), edits);
+	}
+
+	public static String applyNew(Document doc, Collection<? extends Either<TextEdit, SnippetTextEdit>> edits) throws BadLocationException {
+		Assert.isNotNull(doc);
+		Assert.isNotNull(edits);
+		List<Either<TextEdit, SnippetTextEdit>> sortedEdits = new ArrayList<>(edits);
+		sortByLastEditNew(sortedEdits);
+		String text = doc.get();
+		for (int i = sortedEdits.size() - 1; i >= 0; i--) {
+			Either<TextEdit, SnippetTextEdit> te = sortedEdits.get(i);
+			Range r = te.map(TextEdit::getRange, SnippetTextEdit::getRange);
+			if (r != null && r.getStart() != null && r.getEnd() != null) {
+				int start = getOffset(doc, r.getStart());
+				int end = getOffset(doc, r.getEnd());
+				text = text.substring(0, start) + te.map(TextEdit::getNewText, s -> s.getSnippet().getValue()) + text.substring(end, text.length());
+			}
+		}
+		return text;
+	}
+
 	private static int getOffset(Document doc, Position pos) throws BadLocationException {
 		return doc.getLineOffset(pos.getLine()) + pos.getCharacter();
 	}
@@ -89,6 +121,59 @@ public class TextEditUtil {
 					return -1;
 				}
 				return compare(t1.getRange(), t2.getRange());
+			}
+
+			public int compare(Range r1, Range r2) {
+				if (r1 == r2) {
+					return 0;
+				}
+				if (r1 == null) {
+					return -1;
+				}
+				if (r2 == null) {
+					return 1;
+				}
+				int res = compare(r1.getStart(), r2.getStart());
+				if (res == 0) {
+					res = compare(r1.getEnd(), r2.getEnd());
+				}
+				return res;
+			}
+
+			public int compare(Position p1, Position p2) {
+				if (p1 == p2) {
+					return 0;
+				}
+				if (p1 == null) {
+					return -1;
+				}
+				if (p2 == null) {
+					return 1;
+				}
+				int res = p1.getLine() - p2.getLine();
+				if (res == 0) {
+					res = p1.getCharacter() - p2.getCharacter();
+				}
+				return res;
+			}
+		});
+	}
+
+	public static void sortByLastEditNew(List<Either<TextEdit, SnippetTextEdit>> edits) {
+		Collections.sort(edits, new Comparator<Either<TextEdit, SnippetTextEdit>>() {
+
+			@Override
+			public int compare(Either<TextEdit, SnippetTextEdit> t1, Either<TextEdit, SnippetTextEdit> t2) {
+				if (t1 == t2) {
+					return 0;
+				}
+				if (t1 == null) {
+					return 1;
+				}
+				if (t2 == null) {
+					return -1;
+				}
+				return compare(t1.map(TextEdit::getRange, SnippetTextEdit::getRange), t1.map(TextEdit::getRange, SnippetTextEdit::getRange));
 			}
 
 			public int compare(Range r1, Range r2) {

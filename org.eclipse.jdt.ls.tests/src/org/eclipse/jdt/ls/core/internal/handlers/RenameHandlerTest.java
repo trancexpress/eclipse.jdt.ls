@@ -48,6 +48,7 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.RenameFile;
 import org.eclipse.lsp4j.RenameParams;
 import org.eclipse.lsp4j.ResourceOperation;
+import org.eclipse.lsp4j.SnippetTextEdit;
 import org.eclipse.lsp4j.TextDocumentEdit;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextEdit;
@@ -253,7 +254,7 @@ public class RenameHandlerTest extends AbstractProjectsManagerBasedTest {
 		assertEquals(JDTUtils.toURI(cu), resourceChange.getOldUri());
 		assertEquals(JDTUtils.toURI(cu).replaceFirst("(?s)E(?!.*?E)", "Newname"), resourceChange.getNewUri());
 
-		List<TextEdit> testChanges = new LinkedList<>();
+		List<Either<TextEdit, SnippetTextEdit>> testChanges = new LinkedList<>();
 		testChanges.addAll(resourceChanges.get(0).getLeft().getEdits());
 
 		String expected = "package test1;\n" +
@@ -267,7 +268,7 @@ public class RenameHandlerTest extends AbstractProjectsManagerBasedTest {
 						  "   }\n" +
 						  "}\n";
 
-		assertEquals(expected, TextEditUtil.apply(builder.toString(), testChanges));
+		assertEquals(expected, TextEditUtil.applyNew(builder.toString(), testChanges));
 	}
 
 	@Test
@@ -879,10 +880,10 @@ public class RenameHandlerTest extends AbstractProjectsManagerBasedTest {
 
 		assertEquals(5, resourceChanges.size());
 
-		List<TextEdit> testChangesA = new LinkedList<>();
+		List<Either<TextEdit, SnippetTextEdit>> testChangesA = new LinkedList<>();
 		testChangesA.addAll(resourceChanges.get(0).getLeft().getEdits());
 
-		List<TextEdit> testChangesB = new LinkedList<>();
+		List<Either<TextEdit, SnippetTextEdit>> testChangesB = new LinkedList<>();
 		testChangesB.addAll(resourceChanges.get(1).getLeft().getEdits());
 
 		String expectedA =
@@ -901,8 +902,8 @@ public class RenameHandlerTest extends AbstractProjectsManagerBasedTest {
 				"	public B() {}\n" +
 				"   public void foo() {}\n" +
 				"}\n";
-		assertEquals(expectedA, TextEditUtil.apply(builderA.toString(), testChangesA));
-		assertEquals(expectedB, TextEditUtil.apply(builderB.toString(), testChangesB));
+		assertEquals(expectedA, TextEditUtil.applyNew(builderA.toString(), testChangesA));
+		assertEquals(expectedB, TextEditUtil.applyNew(builderB.toString(), testChangesB));
 
 		//moved package
 		CreateFile resourceChange = (CreateFile) resourceChanges.get(2).getRight();

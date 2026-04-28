@@ -56,6 +56,7 @@ import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ResourceOperation;
+import org.eclipse.lsp4j.SnippetTextEdit;
 import org.eclipse.lsp4j.TextDocumentEdit;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextEdit;
@@ -378,8 +379,8 @@ public class AbstractQuickFixTest extends AbstractProjectsManagerBasedTest {
 		Set<String> uris = changes.stream().map(tde -> tde.getTextDocument().getUri()).distinct().collect(Collectors.toSet());
 		assertEquals(1, uris.size(), "Only one resource should be modified");
 		String uri = uris.iterator().next();
-		List<TextEdit> edits = changes.stream().flatMap(e -> e.getEdits().stream()).collect(Collectors.toList());
-		return ResourceUtils.dos2Unix(evaluateChanges(uri, edits));
+		List<Either<TextEdit, SnippetTextEdit>> edits = changes.stream().flatMap(e -> e.getEdits().stream()).collect(Collectors.toList());
+		return ResourceUtils.dos2Unix(evaluateChangesNew(uri, edits));
 	}
 
 	public static String evaluateChanges(Map<String, List<TextEdit>> changes) throws BadLocationException, JavaModelException {
@@ -399,6 +400,17 @@ public class AbstractQuickFixTest extends AbstractProjectsManagerBasedTest {
 			doc.set(cu.getSource());
 		}
 		return ResourceUtils.dos2Unix(TextEditUtil.apply(doc, edits));
+	}
+
+	private static String evaluateChangesNew(String uri, List<Either<TextEdit, SnippetTextEdit>> edits) throws BadLocationException, JavaModelException {
+		assertFalse(edits == null || edits.isEmpty(), "No edits generated: " + edits);
+		ICompilationUnit cu = JDTUtils.resolveCompilationUnit(uri);
+		assertNotNull(cu, "CU not found: " + uri);
+		Document doc = new Document();
+		if (cu.exists()) {
+			doc.set(cu.getSource());
+		}
+		return ResourceUtils.dos2Unix(TextEditUtil.applyNew(doc, edits));
 	}
 
 	public Command getCommand(Either<Command, CodeAction> codeAction) {

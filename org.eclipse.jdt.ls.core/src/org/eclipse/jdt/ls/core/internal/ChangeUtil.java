@@ -302,7 +302,7 @@ public class ChangeUtil {
 					}
 
 					VersionedTextDocumentIdentifier identifier = new VersionedTextDocumentIdentifier(fileUri, null);
-					TextDocumentEdit documentEdit = new TextDocumentEdit(identifier, Arrays.asList(te));
+					TextDocumentEdit documentEdit = new TextDocumentEdit(identifier, Arrays.asList(Either.forLeft(te)));
 					changes.add(Either.forLeft(documentEdit));
 				} else {
 					Map<String, List<org.eclipse.lsp4j.TextEdit>> changes = rootEdit.getChanges();
@@ -337,7 +337,8 @@ public class ChangeUtil {
 			}
 
 			VersionedTextDocumentIdentifier identifier = new VersionedTextDocumentIdentifier(uri, null);
-			TextDocumentEdit documentEdit = new TextDocumentEdit(identifier, textEdits);
+			var edits = textEdits.stream().map(Either::<org.eclipse.lsp4j.TextEdit, org.eclipse.lsp4j.SnippetTextEdit>forLeft).toList();
+			TextDocumentEdit documentEdit = new TextDocumentEdit(identifier, edits);
 			changes.add(Either.forLeft(documentEdit));
 		} else {
 			Map<String, List<org.eclipse.lsp4j.TextEdit>> changes = root.getChanges();

@@ -41,6 +41,7 @@ import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.lsp4j.FileRename;
 import org.eclipse.lsp4j.RenameFilesParams;
 import org.eclipse.lsp4j.ResourceOperation;
+import org.eclipse.lsp4j.SnippetTextEdit;
 import org.eclipse.lsp4j.TextDocumentEdit;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.WorkspaceEdit;
@@ -99,7 +100,7 @@ public class FileEventHandlerTest extends AbstractProjectsManagerBasedTest {
 
 		assertTrue(edit.getDocumentChanges().get(0).isLeft());
 		assertEquals(edit.getDocumentChanges().get(0).getLeft().getTextDocument().getUri(), JDTUtils.toURI(cuB));
-		assertEquals(TextEditUtil.apply(builderB.toString(), edit.getDocumentChanges().get(0).getLeft().getEdits()),
+		assertEquals(TextEditUtil.applyNew(builderB.toString(), edit.getDocumentChanges().get(0).getLeft().getEdits()),
 				"package test1;\n" +
 				"public class B {\n" +
 				"	public void foo() {\n" +
@@ -111,7 +112,7 @@ public class FileEventHandlerTest extends AbstractProjectsManagerBasedTest {
 
 		assertTrue(edit.getDocumentChanges().get(1).isLeft());
 		assertEquals(edit.getDocumentChanges().get(1).getLeft().getTextDocument().getUri(), uriA);
-		assertEquals(TextEditUtil.apply(builderA.toString(), edit.getDocumentChanges().get(1).getLeft().getEdits()),
+		assertEquals(TextEditUtil.applyNew(builderA.toString(), edit.getDocumentChanges().get(1).getLeft().getEdits()),
 				"package test1;\n" +
 				"public class ObjectA1 {\n" +
 				"	public void foo() {\n" +
@@ -176,7 +177,7 @@ public class FileEventHandlerTest extends AbstractProjectsManagerBasedTest {
 
 		assertTrue(documentChanges.get(0).isLeft());
 		assertEquals(documentChanges.get(0).getLeft().getTextDocument().getUri(), JDTUtils.toURI(cuA));
-		assertEquals(TextEditUtil.apply(codeA.toString(), documentChanges.get(0).getLeft().getEdits()),
+		assertEquals(TextEditUtil.applyNew(codeA.toString(), documentChanges.get(0).getLeft().getEdits()),
 				"package parent.pack1;\n" +
 				"import parent.newpack2.B;\n" +
 				"public class A {\n" +
@@ -189,7 +190,7 @@ public class FileEventHandlerTest extends AbstractProjectsManagerBasedTest {
 
 		assertTrue(documentChanges.get(1).isLeft());
 		assertEquals(documentChanges.get(1).getLeft().getTextDocument().getUri(), JDTUtils.toURI(cuB));
-		assertEquals(TextEditUtil.apply(codeB.toString(), documentChanges.get(1).getLeft().getEdits()),
+		assertEquals(TextEditUtil.applyNew(codeB.toString(), documentChanges.get(1).getLeft().getEdits()),
 				"package parent.newpack2;\n" +
 				"public class B {\n" +
 				"	public B() {}\n" +
@@ -235,7 +236,7 @@ public class FileEventHandlerTest extends AbstractProjectsManagerBasedTest {
 
 		assertTrue(documentChanges.get(0).isLeft());
 		assertEquals(documentChanges.get(0).getLeft().getTextDocument().getUri(), JDTUtils.toURI(cuA));
-		assertEquals(TextEditUtil.apply(codeA.toString(), documentChanges.get(0).getLeft().getEdits()),
+		assertEquals(TextEditUtil.applyNew(codeA.toString(), documentChanges.get(0).getLeft().getEdits()),
 				"package parent.pack1;\n" +
 				"import newparent.newpack2.B;\n" +
 				"public class A {\n" +
@@ -248,7 +249,7 @@ public class FileEventHandlerTest extends AbstractProjectsManagerBasedTest {
 
 		assertTrue(documentChanges.get(1).isLeft());
 		assertEquals(documentChanges.get(1).getLeft().getTextDocument().getUri(), JDTUtils.toURI(cuB));
-		assertEquals(TextEditUtil.apply(codeB.toString(), documentChanges.get(1).getLeft().getEdits()),
+		assertEquals(TextEditUtil.applyNew(codeB.toString(), documentChanges.get(1).getLeft().getEdits()),
 				"package newparent.newpack2;\n" +
 				"public class B {\n" +
 				"	public B() {}\n" +
@@ -296,10 +297,10 @@ public class FileEventHandlerTest extends AbstractProjectsManagerBasedTest {
 		assertEquals(documentChanges.get(0).getLeft().getTextDocument().getUri(), JDTUtils.toURI(cuA));
 		assertTrue(documentChanges.get(1).isLeft());
 		assertEquals(documentChanges.get(1).getLeft().getTextDocument().getUri(), JDTUtils.toURI(cuA));
-		List<TextEdit> edits = new ArrayList<>();
+		List<Either<TextEdit, SnippetTextEdit>> edits = new ArrayList<>();
 		edits.addAll(documentChanges.get(0).getLeft().getEdits());
 		edits.addAll(documentChanges.get(1).getLeft().getEdits());
-		assertEquals(TextEditUtil.apply(codeA.toString(), edits),
+		assertEquals(TextEditUtil.applyNew(codeA.toString(), edits),
 				"package newparent.pack1;\n" +
 				"import newparent.pack2.B;\n" +
 				"public class A {\n" +
@@ -312,7 +313,7 @@ public class FileEventHandlerTest extends AbstractProjectsManagerBasedTest {
 
 		assertTrue(documentChanges.get(2).isLeft());
 		assertEquals(documentChanges.get(2).getLeft().getTextDocument().getUri(), JDTUtils.toURI(cuB));
-		assertEquals(TextEditUtil.apply(codeB.toString(), documentChanges.get(2).getLeft().getEdits()),
+		assertEquals(TextEditUtil.applyNew(codeB.toString(), documentChanges.get(2).getLeft().getEdits()),
 				"package newparent.pack2;\n" +
 				"public class B {\n" +
 				"	public B() {}\n" +
@@ -376,8 +377,8 @@ public class FileEventHandlerTest extends AbstractProjectsManagerBasedTest {
 		//@formatter:on
 		TextDocumentEdit textEdit = changes.get(0).getLeft();
 		assertNotNull(textEdit);
-		List<TextEdit> edits = new ArrayList<>(textEdit.getEdits());
-		assertEquals(expected, TextEditUtil.apply(unitC.getSource(), edits));
+		List<Either<TextEdit, SnippetTextEdit>> edits = new ArrayList<>(textEdit.getEdits());
+		assertEquals(expected, TextEditUtil.applyNew(unitC.getSource(), edits));
 
 		//@formatter:off
 		expected = "package jdtls.test2;\r\n" +
@@ -388,7 +389,7 @@ public class FileEventHandlerTest extends AbstractProjectsManagerBasedTest {
 		textEdit = changes.get(1).getLeft();
 		assertNotNull(textEdit);
 		edits = new ArrayList<>(textEdit.getEdits());
-		assertEquals(expected, TextEditUtil.apply(unitB.getSource(), edits));
+		assertEquals(expected, TextEditUtil.applyNew(unitB.getSource(), edits));
 
 		//@formatter:off
 		expected = "package jdtls.test2;\r\n" +
@@ -400,7 +401,7 @@ public class FileEventHandlerTest extends AbstractProjectsManagerBasedTest {
 		textEdit = changes.get(2).getLeft();
 		assertNotNull(textEdit);
 		edits = new ArrayList<>(textEdit.getEdits());
-		assertEquals(expected, TextEditUtil.apply(unitA.getSource(), edits));
+		assertEquals(expected, TextEditUtil.applyNew(unitA.getSource(), edits));
 	}
 
 	@Test
@@ -476,9 +477,9 @@ public class FileEventHandlerTest extends AbstractProjectsManagerBasedTest {
 		//@formatter:on
 		TextDocumentEdit textEdit = changes.get(0).getLeft();
 		assertNotNull(textEdit);
-		List<TextEdit> edits = new ArrayList<>(textEdit.getEdits());
+		List<Either<TextEdit, SnippetTextEdit>> edits = new ArrayList<>(textEdit.getEdits());
 		bar.becomeWorkingCopy(null);
-		assertEquals(expected, TextEditUtil.apply(bar.getSource(), edits));
+		assertEquals(expected, TextEditUtil.applyNew(bar.getSource(), edits));
 		bar.discardWorkingCopy();
 	}
 }

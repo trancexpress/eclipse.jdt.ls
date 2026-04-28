@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
@@ -72,6 +73,7 @@ import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.DidCloseTextDocumentParams;
 import org.eclipse.lsp4j.DidOpenTextDocumentParams;
 import org.eclipse.lsp4j.DidSaveTextDocumentParams;
+import org.eclipse.lsp4j.MarkupContent;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.PublishDiagnosticsParams;
 import org.eclipse.lsp4j.Range;
@@ -1108,12 +1110,12 @@ public class DocumentLifeCycleHandlerTest extends AbstractProjectsManagerBasedTe
 			List<PublishDiagnosticsParams> diagnosticReports = getClientRequests("publishDiagnostics");
 			assertFalse(diagnosticReports.isEmpty(), "No diagnostics sent on open");
 			List<Diagnostic> diagnostics = diagnosticReports.get(0).getDiagnostics();
-			assertTrue(diagnostics.stream().map(Diagnostic::getMessage).anyMatch(message -> message.contains("Syntax error")), "First diagnostics not sent");
+			assertTrue(diagnostics.stream().map(Diagnostic::getMessage).anyMatch(message -> message.map(Function.identity(), MarkupContent::getValue).contains("Syntax error")), "First diagnostics not sent");
 			lifeCycleHandler.didChange(new DidChangeTextDocumentParams(new VersionedTextDocumentIdentifier(filePath.toUri().toString(), 0), List.of(new TextDocumentContentChangeEvent(new Range(new Position(0, 0), new Position(0, 0)), "another"))));
 			diagnosticReports = getClientRequests("publishDiagnostics");
 			assertEquals(2, diagnosticReports.size(), "No diagnostics sent on change");
 			diagnostics = diagnosticReports.get(1).getDiagnostics();
-			assertTrue(diagnostics.stream().map(Diagnostic::getMessage).anyMatch(message -> message.contains("Syntax error")), "diagnostics not updated upon edit");
+			assertTrue(diagnostics.stream().map(Diagnostic::getMessage).anyMatch(message -> message.map(Function.identity(), MarkupContent::getValue).contains("Syntax error")), "diagnostics not updated upon edit");
 		} finally {
 			Files.delete(filePath);
 			Files.delete(filePath.getParent());
